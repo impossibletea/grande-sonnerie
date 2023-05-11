@@ -1,0 +1,11 @@
+[package]
+name = "grande-sonnerie"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rodio = "0.17.1"
+time = { version = "0.3.21", features = ["local-offset"] }
+
