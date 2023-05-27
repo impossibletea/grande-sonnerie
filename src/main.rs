@@ -1,6 +1,7 @@
-use std::{ thread
-         , time::{SystemTime, Duration}
-         };
+use std::{
+    thread,
+    time::{SystemTime, Duration}
+};
 
 use rusty_audio::Audio;
 use serde::{Serialize, Deserialize};
@@ -14,9 +15,9 @@ fn main() {
     loop {
         let time = get_time(config.offset);
         let chime = get_bells(time);
-        if chime.0 && !last_chime.0 {play_sound(1,       "grande", &mut audio)}
-        if chime.1 != last_chime.1  {play_sound(chime.1, "hour",   &mut audio)}
-        if chime.2 != last_chime.2  {play_sound(chime.2, "minute", &mut audio)}
+        if chime.0 && !last_chime.0 {play_sound(1,       "grande", &mut audio);}
+        if chime.1 != last_chime.1  {play_sound(chime.1, "hour",   &mut audio);}
+        if chime.2 != last_chime.2  {play_sound(chime.2, "minute", &mut audio);}
         last_chime = chime;
         thread::sleep(Duration::from_secs(1));
     }
@@ -36,10 +37,7 @@ fn load_config() -> (Config, std::path::PathBuf) {
 }
 
 fn load_audio(audio: &mut Audio, path: &std::path::PathBuf, theme: &str) {
-    [ "grande"
-    , "hour"
-    , "minute"
-    ]
+    ["grande", "hour", "minute"]
     .iter()
     .for_each(|x| audio.add(x, path.join(theme).join(x.to_string() + ".wav")));
 }
@@ -73,14 +71,16 @@ fn play_sound(n: u64, file: &str, audio: &mut Audio) {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Config { offset   : [i64; 3]
-              , sonnerie : String
-              }
+struct Config {
+    offset:   [i64; 3],
+    sonnerie: String,
+}
 
 impl std::default::Default for Config {
     fn default() -> Self {
-        Config { offset   : [0; 3]
-               , sonnerie : "coucou".to_string()
-               }
+        Config {
+            offset:   [0; 3],
+            sonnerie: "coucou".to_string(),
+        }
     }
 }
