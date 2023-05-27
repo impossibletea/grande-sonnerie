@@ -9,6 +9,5 @@ edition = "2021"
 confy = "0.5.1"
 rusty_audio = "1.4.1"
 serde = { version = "1.0.163", features = ["derive"] }
-time = "0.3.21"
 toml = "0.7.3"
 
