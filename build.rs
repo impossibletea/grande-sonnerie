@@ -19,8 +19,6 @@ fn main() {
     let src = env::current_dir().unwrap().join(default_theme);
     let target = get_output_path();
 
-    dir::create_all(&target, false)
-    .expect("Failed to create directory");
-    dir::copy(&src, &target, &dir::CopyOptions::new())
-    .expect("Failed to copy");
+    dir::create_all(&target, false).unwrap_or_default();
+    dir::copy(&src, &target, &dir::CopyOptions::new()).unwrap_or_default();
 }

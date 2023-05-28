@@ -12,6 +12,7 @@ type Chime = (bool, Time);
 fn main() {
     let config = Config::new();
     let mut movement = Movement::new(&config.movement);
+    println!("{movement:?}");
     let mut audio = Audio::new();
 
     let path =
@@ -106,6 +107,7 @@ impl std::default::Default for MovementConfig {
     }
 }
 
+#[derive(Debug)]
 struct Movement {
     am_pm:   u8,
     grand:   Vec<u8>,
@@ -156,37 +158,35 @@ impl Movement {
             hours,
             minutes,
             multi:  config.multichime,
-            past:   (true, (0, 0)),
+            past:   (false, (0, 0)),
         }
     }
 
     fn got_chimes(&self, time: Time) -> Chime {
-        let h = if time.0 != 0 | self.am_pm {
-            time.0 % self.am_pm
-        } else {
-            self.am_pm
-        };
+        let h = time.0;
         let m = time.1;
 
         let g_cs =    self.grand.contains(&h);
         let h_cs = if self.hours.contains(&h) {h} else {0};
         let m_cs = if self.minutes.contains(&m) {m} else {0};
 
+        println!("got: {:?}", (g_cs, (h_cs, m_cs)));
         (g_cs, (h_cs, m_cs))
     }
 
     fn sonne(&mut self, chimes: Chime, audio: &mut Audio) {
+        println!("against: {:?}", self.past);
         if chimes.0 && !self.past.0 {
             play_sound(1, "grand", audio);
             self.past.0 = chimes.0;
         }
         if chimes.1.0 != self.past.1.0 {
-            let n = if self.multi {chimes.1.0} else {1};
+            let n = if self.multi {chimes.1.0 % self.am_pm} else {1};
             play_sound(n, "hour",   audio);
             self.past.1.0 = chimes.1.0;
         }
         if chimes.1.1 != self.past.1.1 {
-            let n = if self.multi {chimes.1.1} else {1};
+            let n = if self.multi {60 / chimes.1.1} else {1};
             play_sound(n, "minute", audio);
             self.past.1.1 = chimes.1.1;
         }
