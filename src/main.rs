@@ -12,7 +12,7 @@ type Chime = (bool, Time);
 fn main() {
     let config = Config::new();
     let mut movement = Movement::new(&config.movement);
-    println!("{movement:?}");
+    println!("{movement}");
     let mut audio = Audio::new();
 
     let path =
@@ -33,7 +33,7 @@ fn main() {
 
     loop {
         let time = get_time(&config.offset);
-        println!("{time:?}");
+        println!("{:0>2}:{:0>2}", time.0, time.1);
         let chimes = movement.got_chimes(time);
         movement.sonne(chimes, &mut audio);
         thread::sleep(Duration::from_secs(1));
@@ -107,14 +107,19 @@ impl std::default::Default for MovementConfig {
     }
 }
 
-#[derive(Debug)]
 struct Movement {
     am_pm:   u8,
     grand:   Vec<u8>,
     hours:   Vec<u8>,
     minutes: Vec<u8>,
-    multi:   bool,
+    multi:   Multichime,
     past:    Chime,
+}
+
+struct Multichime {
+    enable: bool,
+    h_x:    u8,
+    m_x:    u8,
 }
 
 impl Movement {
@@ -152,43 +157,79 @@ impl Movement {
         minutes.dedup();
         if minutes.contains(&0) {minutes.remove(0);}
 
+        let h_x =
+            if let Some(h_div) = config.hours_div {h_div} else {1};
+        let m_x =
+            if let Some(m_div) = config.minutes_div {m_div} else {1};
+        let multi =  Multichime {
+            enable: config.multichime,
+            h_x,
+            m_x,
+        };
+
         Movement {
             am_pm,
             grand,
             hours,
             minutes,
-            multi:  config.multichime,
+            multi,
             past:   (false, (0, 0)),
         }
     }
 
     fn got_chimes(&self, time: Time) -> Chime {
-        let h = time.0;
+        let h = if time.0 != 0 {time.0} else {24};
         let m = time.1;
 
         let g_cs =    self.grand.contains(&h);
         let h_cs = if self.hours.contains(&h) {h} else {0};
         let m_cs = if self.minutes.contains(&m) {m} else {0};
 
-        println!("got: {:?}", (g_cs, (h_cs, m_cs)));
         (g_cs, (h_cs, m_cs))
     }
 
     fn sonne(&mut self, chimes: Chime, audio: &mut Audio) {
-        println!("against: {:?}", self.past);
         if chimes.0 && !self.past.0 {
             play_sound(1, "grand", audio);
             self.past.0 = chimes.0;
         }
         if chimes.1.0 != self.past.1.0 {
-            let n = if self.multi {chimes.1.0 % self.am_pm} else {1};
+            let n = if self.multi.enable {
+                chimes.1.0 % self.am_pm / self.multi.h_x
+            } else {1};
             play_sound(n, "hour",   audio);
             self.past.1.0 = chimes.1.0;
         }
         if chimes.1.1 != self.past.1.1 {
-            let n = if self.multi {60 / chimes.1.1} else {1};
+            let n = if self.multi.enable {
+                chimes.1.1 / self.multi.m_x
+            } else {1};
             play_sound(n, "minute", audio);
             self.past.1.1 = chimes.1.1;
         }
     }
 }
+
+impl std::fmt::Display for Movement {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let multi = if self.multi.enable {""} else {"not "};
+        write!(f,
+"
+Movement will chime the following:
+    * Grand:
+      {:?}
+    * Hours:
+      {:?}
+    * Minutes:
+      {:?}
+
+Chimes will {}be repeated
+",
+               self.grand,
+               self.hours,
+               self.minutes,
+               multi
+        )
+    }
+}
+
