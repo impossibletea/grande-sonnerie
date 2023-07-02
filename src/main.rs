@@ -18,21 +18,6 @@ fn main() {
         .default_output_device()
         .expect("No output device found");
 
-    let path =
-        confy::get_configuration_file_path("grande-sonnerie", None)
-        .unwrap_or_default()
-        .parent()
-        .expect("Why is empty")
-        .to_path_buf();
-    ["grand", "hour", "minute"]
-    .iter()
-    .for_each(|sound| {
-        let sound_path =
-            path
-            .join(&config.sonnerie)
-            .join(sound.to_string() + ".wav");
-    });
-
     loop {
         let time = get_time(&config.offset);
         println!("{:0>2}:{:0>2}", time.0, time.1);
@@ -56,7 +41,6 @@ fn get_time(offset: &(i64, i64, i64)) -> movement::Time {
 #[derive(Serialize, Deserialize)]
 struct Config {
     offset:   (i64, i64, i64),
-    sonnerie: String,
     movement: String,
 }
 
@@ -70,7 +54,6 @@ impl std::default::Default for Config {
     fn default() -> Self {
         Config {
             offset:   (0, 0, 0),
-            sonnerie: "coucou".to_string(),
             movement: "casio".to_string(),
         }
     }

@@ -1,5 +1,8 @@
+use cpal::Device;
 use serde::{Serialize, Deserialize};
-use cpal::{Device, Sample};
+
+mod sonnerie;
+use sonnerie::Sonnerie;
 
 pub type Time  = (u8, u8);
 type Chime = (bool, Time);
@@ -13,6 +16,7 @@ struct MovementConfig {
     minutes_div: Option<u8>,
     twelve_hour: bool,
     multichime:  bool,
+    sonnerie:    String,
 }
 
 impl std::default::Default for MovementConfig {
@@ -25,17 +29,19 @@ impl std::default::Default for MovementConfig {
             minutes_div: None,
             twelve_hour: false,
             multichime:  false,
+            sonnerie:    "coucou".to_string(),
         }
     }
 }
 
 pub struct Movement {
-    am_pm:   u8,
-    grand:   Vec<u8>,
-    hours:   Vec<u8>,
-    minutes: Vec<u8>,
-    multi:   Multichime,
-    past:    Chime,
+    am_pm:    u8,
+    grand:    Vec<u8>,
+    hours:    Vec<u8>,
+    minutes:  Vec<u8>,
+    multi:    Multichime,
+    past:     Chime,
+    sonnerie: Sonnerie,
 }
 
 struct Multichime {
@@ -89,6 +95,8 @@ impl Movement {
             m_x,
         };
 
+        let sonnerie = Sonnerie::new(&config.sonnerie);
+
         Movement {
             am_pm,
             grand,
@@ -96,6 +104,7 @@ impl Movement {
             minutes,
             multi,
             past:   (false, (0, 0)),
+            sonnerie,
         }
     }
 
@@ -103,38 +112,51 @@ impl Movement {
         let h = if time.0 != 0 {time.0} else {24};
         let m = time.1;
 
-        let chimes = (self.grand.contains(&h), (if self.hours.contains(&h) {h} else {0}, if self.minutes.contains(&m) {m} else {0}));
+        let chimes =
+            ( self.grand.contains(&h)
+            , ( if self.hours.contains(&h) {h} else {0}
+              , if self.minutes.contains(&m) {m} else {0}
+              )
+            );
+
+        let mut bells = (0, 0, 0);
 
         if chimes.0 && !self.past.0 {
             self.past.0 = chimes.0;
+            bells.0 = 1;
         }
         if chimes.1.0 != self.past.1.0 {
-            let n = if self.multi.enable {
+            self.past.1.0 = chimes.1.0;
+            bells.1 = if self.multi.enable {
                 chimes.1.0 % self.am_pm / self.multi.h_x
             } else {1};
-            self.past.1.0 = chimes.1.0;
         }
         if chimes.1.1 != self.past.1.1 {
-            let n = if self.multi.enable {
+            self.past.1.1 = chimes.1.1;
+            bells.2 = if self.multi.enable {
                 chimes.1.1 / self.multi.m_x
             } else {1};
-            self.past.1.1 = chimes.1.1;
         }
 
-        use cpal::{
-            StreamConfig, SampleRate, BufferSize,
-            traits::{DeviceTrait, StreamTrait},
-        };
+        let mut data = Vec::new();
+        for _g in [0..bells.0] {data.push(self.sonnerie.grand.clone()) }
+        for _h in [0..bells.1] {data.push(self.sonnerie.hour.clone())  }
+        for _m in [0..bells.2] {data.push(self.sonnerie.minute.clone())}
 
-        let config = StreamConfig {
-            channels:    2,
-            sample_rate: SampleRate(44100),
-            buffer_size: BufferSize::Default,
-        };
+        use cpal::traits::{DeviceTrait, StreamTrait};
+
+        let config =
+            device
+            .supported_output_configs()
+            .expect("Failed getting audio configs")
+            .next()
+            .expect("How is there no output configurations?")
+            .with_sample_rate(cpal::SampleRate(44100))
+            .into();
         let stream =
             device
             .build_output_stream(&config,
-                                 move |data: &mut [f32], _| {},
+                                 move |data: &mut [i16], _| {},
                                  move |err| {eprintln!("Cringe: {err}")},
                                  None)
             .expect("Failed to build sound stream");
