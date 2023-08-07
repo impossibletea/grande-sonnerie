@@ -55,11 +55,7 @@ movement = 'casio'
 `casio.toml`:
 
 ```toml
-grand: none
-hours: none
 hours_div: 1
-minutes: none
-minutes_div: none
 twelve_hour: false
 multichime: false
 ```
