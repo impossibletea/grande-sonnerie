@@ -55,9 +55,9 @@ movement = 'casio'
 `casio.toml`:
 
 ```toml
-hours_div: 1
-twelve_hour: false
-multichime: false
+hours_div = 1
+twelve_hour = false
+multichime = false
 ```
 
 UTC timezone, chimes once every hour with `coucou/hour.wav`.
