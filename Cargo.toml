@@ -2,6 +2,11 @@
 name = "grande-sonnerie"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "The goal of this app is to provide hour and minute repeater on your PC in the same way that is found in such watches as Casio Vacheron Constantin and Patek Phillippe"
+repository = "https://github.com/impossibletea/grande-sonnerie"
+keywords = ["chime", "repeater"]
+categories = ["date-and-time", "multimedia::audio"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
